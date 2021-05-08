@@ -6,8 +6,6 @@ let configData = fs.readFileSync("./config.json")
 let jsonConfig = JSON.parse(configData)
 let botToken = jsonConfig["bot_token"] 
 const TELEBOTURL = `https://api.telegram.org/bot${botToken}`
-// let UPDATEID = jsonConfig["update_id"]
-let UPDATEID
 
 //function for sending message to user
 async function sendResponse(chatId ,msgId , msg) {
@@ -21,26 +19,34 @@ async function sendResponse(chatId ,msgId , msg) {
 }
 
 //Function for getting latest updates from bot end
-async function getBotUpdate(msg) {
+async function getBotUpdate(UPDATEID) {
     let updateUrl = `${TELEBOTURL}/getUpdates`
-    let botUpdate = await axios({
+    let requestObj = {
         method:"get",
         url : updateUrl,
-        params : {"timeout":80}
-    })
+        params : {"timeout":100 , "offset":UPDATEID}
+    }
+    console.log("Getting called")
+
+    let botUpdate = await axios(requestObj)
     let updates = botUpdate.data["result"] 
     if (updates.length != 0) {
-        let lastIndex = botUpdate.data["result"].length-1
-        let usrTxt = updates[lastIndex]["message"]["text"]
-        let usrId = updates[lastIndex]["message"]["chat"]["id"]
-        let msgId = updates[lastIndex]["message"]["message_id"]
-        
-        if (updates[lastIndex]["update_id"] != UPDATEID ) {
-            UPDATEID = updates[lastIndex]["update_id"]
-            return [usrTxt , usrId , msgId]
-        }
+        let allUpdates = []
+        updates.forEach(obj=>{
+            allUpdates.push({
+                "update_id":obj["update_id"],
+                "usrTxt":obj["message"]["text"],
+                "usrId":obj["message"]["chat"]["id"],
+                "msgId":obj["message"]["message_id"]
+            })            
+        })
+        return allUpdates
+
     }
     return false
 }
 
-module.exports = { getBotUpdate , sendResponse }    
+module.exports = { getBotUpdate , sendResponse }  
+
+
+
