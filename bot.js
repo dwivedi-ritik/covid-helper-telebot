@@ -1,22 +1,35 @@
 const filterTweets = require("./twitterapi/tweetfetch")
 const { getBotUpdate , sendResponse } = require("./Telebot/telebot")
+let UPDATEID = 0
 
 async function wrapUp() {
-    let text
-    let objs = await getBotUpdate()
-    if(objs){
-        filterTweets(objs[0]).then((resultObj)=>{
-            if(resultObj.length != 0){
-                resultObj.forEach((res)=>{
-                    text = `<strong>Tweet Link 👉 <a href='${res["tweet_link"]}'> ${res["user_name"]}</a></strong>\n\n<b> ${res["text"]}</b>`
-                    sendResponse(objs[1] , objs[2] , text)
-                })
-            }
-            else{
-                text = "<b> Ops seems like i could't find anything 🙁 \nTry searching just your city name </b>" 
-                sendResponse(objs[1] , objs[2] , text)
-            }
+    let botUpdates = await getBotUpdate(UPDATEID)
+    if(botUpdates){
+        UPDATEID = botUpdates[botUpdates.length - 1]["update_id"] + 1
+        botUpdates.forEach((obj) =>{
+            filterTweets(obj["usrTxt"]).then(tweetRes =>{
+                if(!tweetRes.length){ 
+                    let opsTxt = "<b>Sorry but seems like I could't find any tweets 🙁</b>"
+                    sendResponse(obj.usrId , obj.msgId ,  opsTxt)
+                }else{
+                    tweetRes.forEach(res=>{
+                        text = `<strong>Tweet Link 👉 <a href='${res["tweet_link"]}'> ${res["user_name"]}</a></strong>\n\n<b> ${res["text"]}</b>`
+                        sendResponse(obj.usrId , obj.msgId , text)
+                    })
+                }
+            })
         })
     }
 }
-setInterval(wrapUp , 2000) 
+//This condition is used for running a asynchronous function infinelty
+//Using setInterval will crash the bot because 
+//setInterval does't give shi*t about promise :(
+// credit - StackOverFLow 
+
+async function runMe(){ 
+    while(true){
+        await wrapUp()
+    }
+}
+
+runMe()
