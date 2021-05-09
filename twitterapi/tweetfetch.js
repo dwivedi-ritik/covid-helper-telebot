@@ -21,6 +21,14 @@ async function fetchTweets(query) {
 
 async function filterTweets(query) {
     let resultObj = []
+    if(query === "/start" || ["help"].includes(query.toLowerCase())){
+        return [{
+            "text":"Send me your city name with requirements",
+            "user_name":"Here will be user handle with tweet link",
+            "tweet_link":""
+        }]
+        
+    } 
     let duplicate = new Set()
     let jsonResData = await fetchTweets(query)
     for (data of jsonResData["statuses"]) {
